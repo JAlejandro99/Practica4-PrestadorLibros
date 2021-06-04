@@ -96,6 +96,7 @@ public class RelojGrafico extends JPanel implements Runnable {
     protected void botonDigitado(){
         //Detener reloj, modificar hora y seguir ejecutando el reloj
         continuar = false;
+        
         rh = new ReajustarHora();
         rh.setTitle("Reajustar hora");
         rh.setVisible(true);      

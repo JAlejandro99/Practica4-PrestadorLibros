@@ -16,9 +16,13 @@ public class Ventana1 extends javax.swing.JFrame {
     Ilustrador panel;
     JTextArea listaLibros;
     JScrollPane sp;
+    RelojGrafico r1;
     public ConectorBaseDatos cbd;
     public Ventana1() {
         initComponents();
+        r1 = new RelojGrafico(false,328,50);
+        r1.run();
+        this.jPanel1.add(r1);
         panel = new Ilustrador(450,700,"");
         this.setLocationRelativeTo(null);
         this.jPanel1.add(panel);

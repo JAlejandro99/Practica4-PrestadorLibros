@@ -42,7 +42,6 @@ public class Cliente {
                             @Override
                             public void run(){
                                 try {
-                                    System.out.println("Aqui");
                                     mensaje = br1.readLine();
                                     if(mensaje.equals("vacia")){
                                         int resp = JOptionPane.showConfirmDialog(null, "El sistema ha prestado todos los libros, ¿deseas seguir en el sistema?");
@@ -120,23 +119,7 @@ public class Cliente {
                             numeroCliente = Integer.valueOf(br1.readLine());
                             System.out.println("Numero de cliente: "+numeroCliente);
                             arrancarHilo();
-                            while(true){
-                                /*String msj = br.readLine();
-                                pw.println(msj);
-                                pw.flush();
-                                if(msj.compareToIgnoreCase("salir")==0){
-                                    System.out.println("Termina aplicacion..");
-                                    br.close();
-                                    br1.close();
-                                    pw.close();
-                                    cl.close();
-                                    System.exit(0);
-                                }else{
-                                    String eco = br1.readLine();
-                                    System.out.println("eco recibido:"+eco);
-                                }//else
-                                */
-                            }//while
+                            while(true){}//while
                         }catch(IOException e){
                             e.printStackTrace();
                         }//catch
