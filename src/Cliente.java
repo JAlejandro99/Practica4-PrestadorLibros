@@ -8,11 +8,12 @@ import javax.swing.JOptionPane;
 
 public class Cliente {
     static int PUERTO;
+    static int PUERTO2;
     static String servidor;
+    static String servidor2;
     static int numeroCliente;
     static Ventana2 v2;
     static PrintWriter pw;
-    static BufferedReader br;
     static BufferedReader br1;
     
     public static void main(String[] args){
@@ -53,7 +54,9 @@ public class Cliente {
                                             System.exit(0);
                                         }
                                     }
-                                } catch (IOException ex) {}
+                                } catch (IOException ex) {
+                                    System.out.println("Conexión con el Servidor perdida 1");
+                                }
                             }
                         };
                         recibir.start();
@@ -93,7 +96,9 @@ public class Cliente {
                                     }else{
                                         JOptionPane.showMessageDialog( null, "El prestador de libros ha agotado todos los libros de su inventario, no se ha podido solicitar un libro." , "Libros agotados" , JOptionPane.INFORMATION_MESSAGE );
                                     }
-                                } catch (IOException ex) {}
+                                } catch (IOException ex) {
+                                    System.out.println("Conexión con el Servidor perdida 2");
+                                }
                                 arrancarHilo();
                             }
                         });
@@ -111,7 +116,6 @@ public class Cliente {
                             }
                         });
                         try{
-                            br = new BufferedReader(new InputStreamReader(System.in));
                             Socket cl = new Socket(servidor,PUERTO);
                             System.out.println("Conexion establecida..");
                             pw = new PrintWriter(new OutputStreamWriter(cl.getOutputStream()));
@@ -121,7 +125,7 @@ public class Cliente {
                             arrancarHilo();
                             while(true){}//while
                         }catch(IOException e){
-                            e.printStackTrace();
+                            System.out.println("Conexión con el Servidor perdida 3");
                         }//catch
                     }
                 };
