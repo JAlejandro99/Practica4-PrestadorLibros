@@ -32,25 +32,22 @@ public class Servidor implements Runnable{
     protected int numCliente;
     protected Hashtable informarVacio = new Hashtable();
     public ReentrantLock rl,rl2;
-    public boolean servidor2;
     PrintWriter pwgeneral;
     BufferedReader brgeneral;
     public ArrayList<String> peticiones;
     
     public Servidor(int puerto, String servidor1, int puerto1){
-        if(puerto1!=0){
-            esperar(servidor1,puerto1);
-        }
-        this.puerto = puerto;
         numCliente = 0;
-        informarVacio = new Hashtable();
-        servidor2 = false;
-        rl = new ReentrantLock();
-        rl2 = new ReentrantLock();
         v1 = new Ventana1();
         v1.setTitle("Práctica 3 - Repartir Libros, Servidor");
-        v1.setVisible(true);
         v1.setResizable(false);
+        this.puerto = puerto;
+        informarVacio = new Hashtable();
+        peticiones = new ArrayList<String>();
+        rl = new ReentrantLock();
+        rl2 = new ReentrantLock();
+        esperar(servidor1,puerto1);
+        v1.setVisible(true);
     }
     
     public void esperar(String servidor1, int puerto1){
@@ -63,9 +60,50 @@ public class Servidor implements Runnable{
             System.out.println("Numero de cliente: "+numeroCliente);
             pw.println("servidor");
             pw.flush();
-            String m1="",m2="";
+            String msj,hora,ip,nomCl,nomLib;
+            int i,aux;
             while(true){
-                System.out.println(br.readLine());
+                msj = br.readLine();
+                if(msj.substring(0, 3).equals("reg")){
+                    //v1.cbd.regresar(ip,nomCl)
+                }else{
+                    hora = msj.substring(0,8);
+                    i=9;
+                    while(msj.charAt(i)!=':'){
+                        i++;
+                    }
+                    ip = msj.substring(9,i);
+                    i++;
+                    aux = i;
+                    while(msj.charAt(i)!=':'){
+                        i++;
+                    }
+                    aux = Integer.valueOf(msj.substring(aux,i));
+                    if(aux>numCliente)
+                        numCliente = aux;
+                    i++;
+                    aux = i;
+                    while(msj.charAt(i)!=':'){
+                        i++;
+                    }
+                    nomCl = msj.substring(aux,i);
+                    while(msj.charAt(i)!=':'){
+                        i++;
+                    }
+                    i+=7;
+                    aux = i;
+                    while(msj.charAt(i)!=','){
+                        i++;
+                    }
+                    /*nomLib = msj.substring(aux,i);
+                    System.out.println(msj);
+                    System.out.println(hora);
+                    System.out.println(ip);
+                    System.out.println(nomCl);
+                    System.out.println(nomLib);
+                    System.out.println(numCliente);*/
+                    //v1.cbd.guardarPedido(hora,ip,nomCl,nomLib);
+                }
             }//while
         } catch (IOException ex) {}
     }
@@ -96,7 +134,10 @@ public class Servidor implements Runnable{
                         pw = new PrintWriter(new OutputStreamWriter(cl.getOutputStream()));
                         br = new BufferedReader(new InputStreamReader(cl.getInputStream()));
                         salir = false;
-                        numeroCliente = numCliente;
+                        numeroCliente = Integer.valueOf(br.readLine());
+                        if(numeroCliente==-1){
+                            numeroCliente = numCliente;
+                        }
                         informarVacio.put(numeroCliente,"0");
                         pw.println(String.valueOf(numeroCliente));
                         pw.flush();
@@ -144,11 +185,9 @@ public class Servidor implements Runnable{
                                 System.out.println("Envio la informacion del cliente");
                                 pw.println(resp[0]);
                                 pw.flush();
-                                if(servidor2){
-                                    rl2.lock();
-                                    peticiones.add(auxiliar+":"+auxiliar2+":"+numCliente+":"+"Cliente"+String.valueOf(numeroCliente)+resp[0]);
-                                    rl2.unlock();
-                                }
+                                rl2.lock();
+                                peticiones.add(auxiliar+":"+auxiliar2+":"+numCliente+":"+"Cliente"+String.valueOf(numeroCliente)+":"+resp[0]);
+                                rl2.unlock();
                                 v1.refrescarLibros();
                                 if(v1.cbd.esLibrosVacio()){
                                     System.out.println("\nLa base de datos está vacia");
@@ -168,9 +207,7 @@ public class Servidor implements Runnable{
                                 System.out.println("Servidor 2 Iniciado");
                                 enviar.stop();
                                 rl.lock();
-                                peticiones = new ArrayList<String>();
                                 informarVacio.remove(numeroCliente);
-                                servidor2 = true;
                                 rl.unlock();
                                 enviar = new Thread(){
                                     public void run(){
@@ -179,11 +216,12 @@ public class Servidor implements Runnable{
                                                 pwgeneral = new PrintWriter("auxiliar1.txt");
                                                 pwgeneral.close();
                                                 if(peticiones.size()>0){
-                                                    rl2.lock();for(int i=0;i<peticiones.size();i++){
+                                                    rl2.lock();
+                                                    for(int i=0;i<peticiones.size();i++){
                                                         pw.println(peticiones.get(i));
                                                         pw.flush();
                                                     }
-                                                    peticiones = new ArrayList<String>();
+                                                    peticiones.clear();
                                                     rl2.unlock();
                                                     new File("auxiliar.txt").delete();
                                                 }

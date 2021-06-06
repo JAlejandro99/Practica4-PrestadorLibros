@@ -120,6 +120,8 @@ public class Cliente {
                             System.out.println("Conexion establecida..");
                             pw = new PrintWriter(new OutputStreamWriter(cl.getOutputStream()));
                             br1 = new BufferedReader(new InputStreamReader(cl.getInputStream()));
+                            pw.println("-1");
+                            pw.flush();
                             numeroCliente = Integer.valueOf(br1.readLine());
                             System.out.println("Numero de cliente: "+numeroCliente);
                             arrancarHilo();
