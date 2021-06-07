@@ -2,6 +2,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.*;
 import java.io.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -15,13 +16,14 @@ public class Cliente {
     static Ventana2 v2;
     static PrintWriter pw;
     static BufferedReader br1;
+    static Socket cl;
     
     public static void main(String[] args){
         numeroCliente = 0;
         pedirServidoryPuerto();
     }//main
     public static void pedirServidoryPuerto(){
-        ServidoryPuerto sp = new ServidoryPuerto();
+        ServidoryPuerto sp = new ServidoryPuerto(1);
         sp.setTitle("Práctica 3 - Repartir Libros, Servidor y Puerto");
         sp.setVisible(true);
         sp.setResizable(false);
@@ -30,6 +32,20 @@ public class Cliente {
                 PUERTO = Integer.valueOf(sp.puerto.getText());
                 servidor = sp.IP.getText();
                 sp.setVisible(false);
+                pedirServidoryPuerto2();
+            }
+        });
+    }
+    public static void pedirServidoryPuerto2(){
+        ServidoryPuerto sp = new ServidoryPuerto(2);
+        sp.setTitle("Práctica 3 - Repartir Libros, Servidor 2 y Puerto");
+        sp.setVisible(true);
+        sp.setResizable(false);
+        sp.aceptar.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent e) {
+                PUERTO2 = Integer.valueOf(sp.puerto.getText());
+                servidor2 = sp.IP.getText();
+                sp.setVisible(false);
                 v2 = new Ventana2();
                 v2.setTitle("Práctica 3 - Repartir Libros, Cliente");
                 v2.setVisible(true);
@@ -37,6 +53,35 @@ public class Cliente {
                 Thread cliente = new Thread(){
                     boolean seguro;
                     Thread recibir;
+                    public void reconectar(){
+                        try{
+                            cl = new Socket(servidor2,PUERTO2);
+                            System.out.println("\nConexion establecida..");
+                            pw = new PrintWriter(new OutputStreamWriter(cl.getOutputStream()));
+                            br1 = new BufferedReader(new InputStreamReader(cl.getInputStream()));
+                            pw.println(String.valueOf(numeroCliente));
+                            pw.flush();
+                            numeroCliente = Integer.valueOf(br1.readLine());
+                            br1.readLine();
+                            System.out.println("Numero de cliente: "+numeroCliente);
+                            arrancarHilo();
+                            while(!cl.isClosed()){}//while
+                        }catch(IOException e){
+                            try {
+                                cl = new Socket(servidor,PUERTO);
+                                System.out.println("\nConexion establecida..");
+                                pw = new PrintWriter(new OutputStreamWriter(cl.getOutputStream()));
+                                br1 = new BufferedReader(new InputStreamReader(cl.getInputStream()));
+                                pw.println(String.valueOf(numeroCliente));
+                                pw.flush();
+                                numeroCliente = Integer.valueOf(br1.readLine());
+                                System.out.println("Numero de cliente: "+numeroCliente);
+                                arrancarHilo();
+                                while(!cl.isClosed()){}//while
+                            } catch (IOException ex) {}
+                        }
+                        reconectar();
+                    }
                     public void arrancarHilo(){
                         recibir = new Thread(){
                             String mensaje;
@@ -56,6 +101,13 @@ public class Cliente {
                                     }
                                 } catch (IOException ex) {
                                     System.out.println("Conexión con el Servidor perdida 1");
+                                    try {
+                                        //reconectar();
+                                        cl.close();
+                                        br1.close();
+                                        pw.close();
+                                        System.out.println("Socket cerrado");
+                                    } catch (IOException ex1) {}
                                 }
                             }
                         };
@@ -98,6 +150,7 @@ public class Cliente {
                                     }
                                 } catch (IOException ex) {
                                     System.out.println("Conexión con el Servidor perdida 2");
+                                    //reconectar();
                                 }
                                 arrancarHilo();
                             }
@@ -116,7 +169,7 @@ public class Cliente {
                             }
                         });
                         try{
-                            Socket cl = new Socket(servidor,PUERTO);
+                            cl = new Socket(servidor,PUERTO);
                             System.out.println("Conexion establecida..");
                             pw = new PrintWriter(new OutputStreamWriter(cl.getOutputStream()));
                             br1 = new BufferedReader(new InputStreamReader(cl.getInputStream()));
@@ -125,7 +178,8 @@ public class Cliente {
                             numeroCliente = Integer.valueOf(br1.readLine());
                             System.out.println("Numero de cliente: "+numeroCliente);
                             arrancarHilo();
-                            while(true){}//while
+                            while(!cl.isClosed()){}//while
+                            reconectar();
                         }catch(IOException e){
                             System.out.println("Conexión con el Servidor perdida 3");
                         }//catch

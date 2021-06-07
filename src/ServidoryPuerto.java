@@ -3,6 +3,13 @@ public class ServidoryPuerto extends javax.swing.JFrame {
         initComponents();
         this.setLocationRelativeTo(null);
     }
+    public ServidoryPuerto(int i) {
+        initComponents();
+        this.setLocationRelativeTo(null);
+        if(i==2){
+            puerto.setText("6000");
+        }
+    }
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {

@@ -56,6 +56,8 @@ public class Servidor implements Runnable{
             System.out.println("Conexion establecida..");
             PrintWriter pw = new PrintWriter(new OutputStreamWriter(cl.getOutputStream()));
             BufferedReader br = new BufferedReader(new InputStreamReader(cl.getInputStream()));
+            pw.println("-1");
+            pw.flush();
             int numeroCliente = Integer.valueOf(br.readLine());
             System.out.println("Numero de cliente: "+numeroCliente);
             pw.println("servidor");
@@ -95,13 +97,13 @@ public class Servidor implements Runnable{
                     while(msj.charAt(i)!=','){
                         i++;
                     }
-                    /*nomLib = msj.substring(aux,i);
+                    nomLib = msj.substring(aux,i);
                     System.out.println(msj);
                     System.out.println(hora);
                     System.out.println(ip);
                     System.out.println(nomCl);
                     System.out.println(nomLib);
-                    System.out.println(numCliente);*/
+                    System.out.println(numCliente);
                     //v1.cbd.guardarPedido(hora,ip,nomCl,nomLib);
                 }
             }//while
@@ -135,14 +137,15 @@ public class Servidor implements Runnable{
                         br = new BufferedReader(new InputStreamReader(cl.getInputStream()));
                         salir = false;
                         numeroCliente = Integer.valueOf(br.readLine());
+                        //System.out.println(numeroCliente);
                         if(numeroCliente==-1){
                             numeroCliente = numCliente;
+                            numCliente++;
                         }
                         informarVacio.put(numeroCliente,"0");
                         pw.println(String.valueOf(numeroCliente));
                         pw.flush();
-                        System.out.println("Cliente conectado: "+String.valueOf(cl.getInetAddress()).substring(1)+":"+cl.getPort()+", id asignada: "+String.valueOf(numCliente));                  
-                        numCliente++;
+                        System.out.println("Cliente conectado: "+String.valueOf(cl.getInetAddress()).substring(1)+":"+cl.getPort()+", id asignada: "+String.valueOf(numeroCliente));                  
                         Thread enviar = new Thread(){
                             @Override
                             public void run(){
