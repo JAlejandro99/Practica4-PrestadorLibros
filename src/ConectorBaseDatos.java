@@ -36,7 +36,8 @@ public class ConectorBaseDatos {
         //c.reiniciarBD();
        
         //String[] str = c.pedirLibro("192.168.0.1","1:32","Cliente1");
-        System.out.println(c.getIdCliente("cliente0")); 
+        c.regresarLibros("cliente0","03:21:00"); 
+        System.out.println("Realizado");
 
     }
     
@@ -79,7 +80,46 @@ public class ConectorBaseDatos {
         }
         return ret;
     }
-    public void regresarLibros(){
+    public void regresarLibros(String nombreCliente,String hora_fin){
+        int i;
+        ArrayList<Integer> ar = new ArrayList();
+        Connection con = abrirConexion();
+        PreparedStatement ps;
+        try{
+            ps = con.prepareStatement("SELECT Pedido_idPedido FROM usuariosesion WHERE Usuario_idUsuario = "+getIdCliente(nombreCliente));
+            ResultSet res;
+            res = ps.executeQuery();
+            while(res.next()){
+                i = Integer.parseInt(res.getString("Pedido_idPedido"));
+                executeUpdate("UPDATE pedido SET hora_fin = '"+hora_fin+"' WHERE idPedido = "+i);
+                ar.add(i);
+            }
+            res.close();
+            ps.close();
+            con.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(ConectorBaseDatos.class.getName()).log(Level.SEVERE, null, ex);
+        } 
+               
+        Connection con1 = abrirConexion();
+        PreparedStatement ps1=null;
+        try{
+            ResultSet res=null;
+            int isbn=0;
+            for (int j = 0; j < ar.size(); j++) {
+                ps1 = con1.prepareStatement("SELECT Libro_ISBN FROM sesion WHERE Pedido_idPedido = "+ar.get(j));
+                res = ps1.executeQuery();
+                if(res.next()){
+                    isbn = Integer.parseInt(res.getString("Libro_ISBN"));
+                    executeUpdate("UPDATE libro SET disponibilidad = 1 WHERE ISBN = "+isbn);
+                }
+            }                 
+            res.close();
+            ps1.close();
+            con1.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(ConectorBaseDatos.class.getName()).log(Level.SEVERE, null, ex);
+        } 
         
     }
     //Si el cliente existe, regresa su id, en caso contrario regresa -1
