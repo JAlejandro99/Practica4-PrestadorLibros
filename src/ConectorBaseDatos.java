@@ -1,5 +1,3 @@
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Random;
@@ -7,34 +5,45 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ConectorBaseDatos {
-    Random rd; 
+    Random rd;
     int idEfim;
+    String namedb;
+    int numPedido;
+    int numSesion;
     
-    public ConectorBaseDatos(){
+    public ConectorBaseDatos(int selectBase){
         rd = new Random();
+        numPedido = 1;
+        numSesion = 1;
         try{
-            Class.forName("com.mysql.jdbc.Driver");           
+            Class.forName("com.mysql.jdbc.Driver");
+            if(selectBase==0)
+                namedb="";
+            else if (selectBase==1)
+                namedb="2";
+            else
+                namedb="B";
         }catch(Exception e){
             System.out.println(e);
         }
     }
     public static void main(String[] args){
-        ConectorBaseDatos c = new ConectorBaseDatos();
+        ConectorBaseDatos c = new ConectorBaseDatos(0);
         String[] cad = new String[2];
         //cad = c.pedirLibro("el muerto");
         //System.out.println(cad[0]+"\n"+cad[1]);
         //c.escribeRegistroBD("8.8.8.8", "18:01", "NombreX", "ClienteCachondo")
         //c.reiniciarBD();
        
-        String[] str = c.pedirLibro("192.168.0.1","1:32","Cliente1");
-        System.out.println(str[0]);
-        System.out.println(str[1]);
+        //String[] str = c.pedirLibro("192.168.0.1","1:32","Cliente1");
+        System.out.println(c.getIdCliente("cliente0")); 
+
     }
     
-    public static Connection abrirConexion(){
+    public Connection abrirConexion(){
         Connection conexion = null;
         try {                     
-            conexion = (Connection) DriverManager.getConnection("jdbc:mysql://localhost:3306/mydb", "root", "");
+            conexion = (Connection) DriverManager.getConnection("jdbc:mysql://localhost:3306/mydb"+namedb, "root", "");
         } catch (SQLException ex) {
             Logger.getLogger(ConectorBaseDatos.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -57,35 +66,87 @@ public class ConectorBaseDatos {
                 ret[1] = rs.getString("portada");        
                 i = Integer.parseInt(rs.getString("ISBN"));
             }
-            con.close();     
-            executeUpdate("DELETE FROM libro WHERE ISBN = "+i);
-            executeUpdate("INSERT INTO usuario (IP, nombre) VALUES('"+IP+"','"+nombreCliente+"')");
-            executeUpdate("INSERT INTO pedido (idPedido,fecha,hora_inicio) VALUES ("+i+",'2021-05-07','"+hora+"')");
+            con.close();           
+            executeUpdate("UPDATE libro SET disponibilidad = 0 WHERE ISBN = "+i);         
+            executeUpdate("INSERT INTO pedido (idPedido,fecha,hora_inicio) VALUES ("+numPedido+",CURRENT_DATE(),'"+hora+"')");
+            executeUpdate("INSERT INTO sesion (id_sesion,Pedido_idPedido, Libro_ISBN) VALUES ("+numSesion+","+numPedido+","+i+")");                    
+            registraCliente(nombreCliente,IP);
             
+            numSesion++;         
+            numPedido++;         
         }catch(Exception e){
             System.out.println(e);
         }
         return ret;
     }
+    public void regresarLibros(){
+        
+    }
+    //Si el cliente existe, regresa su id, en caso contrario regresa -1
+    public void registraCliente(String nombreCliente,String IP){
+        int ret=0;
+        Connection con = abrirConexion();
+        PreparedStatement ps;
+        try{
+            ps = con.prepareStatement("SELECT idUsuario FROM usuario WHERE nombre = '"+nombreCliente+"'");
+            ResultSet res;
+            res = ps.executeQuery();
+     
+            if(res.next()){
+                ret = Integer.parseInt(res.getString("idUsuario"));
+                executeUpdate("INSERT INTO usuariosesion  (id_usuariosesion,Usuario_idUsuario,Pedido_idPedido) VALUES ("+numSesion+","+ret+","+numPedido+")");
+            }
+            else{
+                executeUpdate("INSERT INTO usuario (IP, nombre) VALUES('"+IP+"','"+nombreCliente+"')");             
+                executeUpdate("INSERT INTO usuariosesion  (id_usuariosesion,Usuario_idUsuario,Pedido_idPedido) VALUES ("+numSesion+","+getIdCliente(nombreCliente)+","+numPedido+")");
+            }
+            res.close();
+            ps.close();
+            con.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(ConectorBaseDatos.class.getName()).log(Level.SEVERE, null, ex);
+        }    
+    }
+    public int getIdCliente(String nombreCliente){
+        int rt=0;
+        Connection con = abrirConexion();
+        PreparedStatement ps;
+        try{
+            ps = con.prepareStatement("SELECT idUsuario FROM usuario WHERE nombre = '"+nombreCliente+"'");
+            ResultSet res;
+            res = ps.executeQuery();
+            if(res.next())
+                rt = Integer.parseInt(res.getString("idUsuario"));
+            res.close();
+            ps.close();
+            con.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(ConectorBaseDatos.class.getName()).log(Level.SEVERE, null, ex);
+        }  
+        return rt;
+    }
     public void reiniciarBD(){
         Connection con = abrirConexion();
         PreparedStatement ps;
         try {         
+            executeUpdate("DELETE from usuariosesion; ");
+            executeUpdate("DELETE from sesion; ");            
             executeUpdate("DELETE from libro; ");
             executeUpdate("alter table libro AUTO_INCREMENT = 1");
             executeUpdate("DELETE from pedido; ");
+            executeUpdate("alter table pedido AUTO_INCREMENT = 1");
             executeUpdate("DELETE from usuario; ");
             executeUpdate("alter table usuario AUTO_INCREMENT = 1");
-            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada) VALUES(\"autor1\", \"Delfin\", \"el muerto\", \"100.75\",\"imagen1.jpg\")");
-            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada) VALUES(\"autor2\", \"Picasso\", \"Cien años de soledad\", \"134.34\",\"imagen2.jpg\")");
-            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada) VALUES(\"autor3\", \"Solman\", \"Hush hush\", \"53.36\",\"imagen3.jpg\");");
-            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada) VALUES(\"autor4\", \"Playa\", \"Malvado Conejito\", \"234.25\",\"imagen4.jpg\");\n");
-            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada) VALUES(\"autor5\", \"Ariel\", \"El Principito\", \"354.65\",\"imagen5.jpg\");");
-            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada) VALUES(\"autor6\", \"Tecnos\", \"Bajo el espino\", \"500.03\",\"imagen6.jpg\");\n");
-            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada) VALUES(\"autor7\", \"Alianza\", \"Harry Potter\", \"68.68\",\"imagen7.jpg\");");
-            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada) VALUES(\"autor8\", \"Akal\", \"Crespusculo\", \"143.96\",\"imagen8.jpg\");");
-            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada) VALUES(\"autor9\", \"Sintesis\", \"Cincuenta sombras de Grey\", \"111.22\",\"imagen9.jpg\");");
-            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada) VALUES(\"autor10\", \"Aranzadi\", \"Quijote\", \"123.12\",\"imagen10.jpg\");");
+            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada,disponibilidad) VALUES(\"autor1\", \"Delfin\", \"el muerto\", \"100.75\",\"imagen1.jpg\",1)");
+            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada,disponibilidad) VALUES(\"autor2\", \"Picasso\", \"Cien años de soledad\", \"134.34\",\"imagen2.jpg\",1)");
+            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada,disponibilidad) VALUES(\"autor3\", \"Solman\", \"Hush hush\", \"53.36\",\"imagen3.jpg\",1);");
+            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada,disponibilidad) VALUES(\"autor4\", \"Playa\", \"Malvado Conejito\", \"234.25\",\"imagen4.jpg\",1);\n");
+            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada,disponibilidad) VALUES(\"autor5\", \"Ariel\", \"El Principito\", \"354.65\",\"imagen5.jpg\",1);");
+            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada,disponibilidad) VALUES(\"autor6\", \"Tecnos\", \"Bajo el espino\", \"500.03\",\"imagen6.jpg\",1);\n");
+            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada,disponibilidad) VALUES(\"autor7\", \"Alianza\", \"Harry Potter\", \"68.68\",\"imagen7.jpg\",1);");
+            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada,disponibilidad) VALUES(\"autor8\", \"Akal\", \"Crespusculo\", \"143.96\",\"imagen8.jpg\",1);");
+            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada,disponibilidad) VALUES(\"autor9\", \"Sintesis\", \"Cincuenta sombras de Grey\", \"111.22\",\"imagen9.jpg\",1);");
+            executeUpdate("INSERT INTO libro (autor,editorial,nombre,precio,portada,disponibilidad) VALUES(\"autor10\", \"Aranzadi\", \"Quijote\", \"123.12\",\"imagen10.jpg\",1);");
             con.close();   
         } catch (SQLException ex) {
             Logger.getLogger(ConectorBaseDatos.class.getName()).log(Level.SEVERE, null, ex);
@@ -97,7 +158,7 @@ public class ConectorBaseDatos {
         Connection con = abrirConexion();
         PreparedStatement ps;
         try{
-            ps = con.prepareStatement("SELECT nombre FROM libro");
+            ps = con.prepareStatement("SELECT nombre FROM libro WHERE disponibilidad = 1");
             ResultSet res; 
             res = ps.executeQuery();
             while(res.next())
