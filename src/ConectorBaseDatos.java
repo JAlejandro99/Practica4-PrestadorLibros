@@ -36,7 +36,8 @@ public class ConectorBaseDatos {
         //c.reiniciarBD();
        
         //String[] str = c.pedirLibro("192.168.0.1","1:32","Cliente1");
-        c.regresarLibros("cliente0","03:21:00"); 
+        c.reiniciarBD();
+        c.guardaRegistro("03:00:00","8.8.8.8","Cliente2","el muerto");
         System.out.println("Realizado");
 
     }
@@ -50,7 +51,37 @@ public class ConectorBaseDatos {
         }
         return conexion;
     }
-    
+    public void guardaRegistro(String hora_ini, String IP, String nombreCliente,String nombreLibro){    
+        executeUpdate("INSERT INTO pedido (idPedido,fecha,hora_inicio) VALUES ("+numPedido+",CURRENT_DATE(),'"+hora_ini+"')"); 
+        setLibroDisp(nombreLibro,false);
+        registraCliente(nombreCliente,IP);  
+        numSesion++;         
+        numPedido++;       
+    }
+    private void setLibroDisp(String nombreLibro,boolean disp){
+        Connection con = abrirConexion();
+        PreparedStatement ps;
+        int isbn=0;
+        try{
+            ps = con.prepareStatement("SELECT ISBN FROM libro WHERE nombre = '"+nombreLibro+"'");
+            ResultSet res;
+            res = ps.executeQuery();
+            
+            if(res.next()){
+                isbn = Integer.parseInt(res.getString("ISBN"));
+                if(disp)
+                    executeUpdate("UPDATE libro SET disponibilidad = 1 WHERE ISBN = "+isbn);    
+                else
+                    executeUpdate("UPDATE libro SET disponibilidad = 0 WHERE ISBN = "+isbn);
+                
+                executeUpdate("INSERT INTO sesion (id_sesion,Pedido_idPedido, Libro_ISBN) VALUES ("+numSesion+","+numPedido+","+isbn+")");
+            }
+            
+        }catch(Exception e){
+            System.out.println(e);       
+            numPedido++;  
+        }
+    }
     String[] pedirLibro(String IP, String hora, String nombreCliente){
         String[] ret = new String[2];
         ArrayList<String> ar;
@@ -147,7 +178,7 @@ public class ConectorBaseDatos {
             Logger.getLogger(ConectorBaseDatos.class.getName()).log(Level.SEVERE, null, ex);
         }    
     }
-    public int getIdCliente(String nombreCliente){
+    private int getIdCliente(String nombreCliente){
         int rt=0;
         Connection con = abrirConexion();
         PreparedStatement ps;
@@ -215,7 +246,7 @@ public class ConectorBaseDatos {
         Connection con = abrirConexion();
         PreparedStatement ps;
         try{
-            ps = con.prepareStatement("SELECT * FROM libro");
+            ps = con.prepareStatement("SELECT * FROM libro WHERE disponibilidad = 1");
             ResultSet res; 
             res = ps.executeQuery();          
      
