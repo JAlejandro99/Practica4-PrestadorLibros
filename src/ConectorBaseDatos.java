@@ -122,7 +122,7 @@ public class ConectorBaseDatos {
             res = ps.executeQuery();
             while(res.next()){
                 i = Integer.parseInt(res.getString("Pedido_idPedido"));
-                executeUpdate("UPDATE pedido SET hora_fin = '"+hora_fin+"' WHERE idPedido = "+i);
+                executeUpdate("UPDATE pedido SET hora_fin = '"+hora_fin+"' WHERE idPedido = "+i+" AND hora_fin IS null");
                 ar.add(i);
             }
             res.close();
